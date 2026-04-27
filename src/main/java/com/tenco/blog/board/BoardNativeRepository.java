@@ -1,6 +1,6 @@
-package com.tenco.blog.repository;
+package com.tenco.blog.board;
 
-import com.tenco.blog.model.Board;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
@@ -46,5 +46,48 @@ public class BoardNativeRepository {
         //while(rs.next) {Board board = new Board(); board.setTitle(rs.getString("title"))}
         Query query = em.createNativeQuery(sql, Board.class);
         return query.getResultList();
+    }
+
+
+    // 게시글 상세 보기 (특정 ID로 조회)
+    public Board findById(Integer id) {
+        String strQuery = """
+                SELECT * FROM BOARD_TB where id = ?
+                """;
+        try {
+            Query query = em.createNativeQuery(strQuery, Board.class);
+            query.setParameter(1, id);
+            return (Board) query.getSingleResult();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    //특정 게시글 삭제 요청
+    @Transactional
+    public void deleteById(Integer id) {
+        Query query = em.createNativeQuery("delete from board_tb where id = ?");
+        query.setParameter(1, id);
+        query.executeUpdate();
+    }
+
+    //게시글 수정하기
+
+    @Transactional
+    public boolean updateById(String username, String title, String content, Integer id) {
+        String queryStr = """
+                update board_tb set username = ? ,title = ?, content = ? where id = ?
+                """;
+        Query query = em.createNativeQuery(queryStr);
+        query.setParameter(1, username);
+        query.setParameter(2, title);
+        query.setParameter(3, content);
+        query.setParameter(4, id);
+        int rows = query.executeUpdate();
+        if (rows > 0){
+            return true;
+        }else {
+            return false;
+        }
     }
 }

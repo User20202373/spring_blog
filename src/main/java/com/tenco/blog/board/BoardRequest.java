@@ -17,7 +17,7 @@ public class BoardRequest {
         //DTO에서 Entity로 변환해주는 편의 메서드
         public Board toEntity() {
             return Board.builder()
-                    .username(username)
+                   // .username(username)
                     .title(title)
                     .content(content)
                     .build();

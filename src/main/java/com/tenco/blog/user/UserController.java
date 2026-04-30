@@ -23,9 +23,7 @@ public class UserController {
     @PostMapping("/user/update")
     public String updateProc(UserRequest.UpdateDTO updateDTO,HttpSession session){
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null){
-            return "redirect:/login-form";
-        }
+
         try {
             updateDTO.validate();
             //더티체킹 전략
@@ -40,14 +38,11 @@ public class UserController {
     }
 
 
-
     @GetMapping("/user/update-form")
     public String updateFormPage(HttpSession session, Model model) {
         //인증검사
         User sessionUser = (User) session.getAttribute("sessionUser");
-        if (sessionUser == null) {
-            return "redirect:/login-form";
-        }
+
 
         User userEntity = userRepository.findById(sessionUser.getId());
         userEntity.setPassword("");
@@ -104,20 +99,8 @@ public class UserController {
         return "user/join-form";
     }
 
-    //회원 가입 기능 요청
-    // 주소 설계 : http://localhost:8080/join-form
-
-    //    public String joinProc(@RequestParam(name = "username")String username,
-//                           @RequestParam(name = "password")String password,
-//                           @RequestParam(name = "email")String email){
-    //메세지 컨버터라는녀석이 구문을 분석해서 자동으로 파싱 처리 및 매핑해준다
-    //파싱 전략 1 - key=value 구조(@RequestParam 사용)
-    //파싱 전략 2 - Object DTO 설계
     @PostMapping("/join")
     public String joinProc(UserRequest.JoinDTO joinDTO) {
-        log.info("username" + joinDTO.getUsername());
-        log.info("password" + joinDTO.getPassword());
-        log.info("email" + joinDTO.getEmail());
 
         //유효성 검사하기
         joinDTO.validate(); // 유효성 검사 --> 오류 --> 예외 처리넘어감
@@ -128,9 +111,6 @@ public class UserController {
         }
         userRepository.save(joinDTO.toEntity());
 
-        //Todo
-        // 로그인 화면으로 리다이렉트 처리 예정
-        return "redirect:/";
+        return "redirect:/login-form";
     }
-
 }

@@ -1,6 +1,7 @@
 package com.tenco.blog.board;
 
 
+import com.tenco.blog._core.errors.*;
 import com.tenco.blog.user.User;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;

@@ -4,10 +4,10 @@
         <div class="card-header"><b>글수정 화면입니다</b></div>
         <div class="card-body">
             <!--  익명 게시글 작성    -->
-            <form action="/board/{{board.id}}/update" method="post">
+            <form action="/board/{{id}}/update" method="post">
                 <div class="mb-3">
                     <input type="text" name="username"  class="form-control"
-                           placeholder="enter username" value="{{board.username}}">
+                           placeholder="enter username" value="{{board.user.username}}" readonly>
                 </div>
                 <div class="mb-3">
                     <input type="text" name="title" class="form-control"

@@ -43,8 +43,10 @@ public class BoardPersistRepository {
 
     //JPQL을 사용한 게시글 목록 조회
     public List<Board> findAll() {
-
-        String jpqlStr = "SELECT b FROM Board b ORDER BY b.id DESC";
+        //패치 조인 : Board와 연관된 데이터를 JOIN 해서 한번에 가져오는 문법
+        //JOIN FETCH 사용해 쿼리 변경함
+        // N + 1 문제를 해결하는 정밀 제어, JOIN FETCH 은 그냥 한번에 다 가져욤
+        String jpqlStr = "SELECT b FROM Board b JOIN FETCH b.user ORDER BY b.id DESC";
         List<Board> boardList = em.createQuery(jpqlStr, Board.class).getResultList();
 
 
@@ -85,7 +87,7 @@ public class BoardPersistRepository {
 
     @Transactional
     //                               사용자가 던진 board객체
-    public void updateById(Integer id, BoardRequest.UpdateDTO updateDTO) {
+    public Board updateById(Integer id, BoardRequest.UpdateDTO updateDTO) {
         //수정시 항상 조회 먼저 확인
 
         //영속화된 board객체
@@ -99,6 +101,7 @@ public class BoardPersistRepository {
         // 우리가 관리하고자 하는 엔티티는 Board이다
 
         boardEntity.update(updateDTO);
+        return boardEntity;
         //변경 감지(Dirty Checking) 동작 됨.
         //더티채킹의미는 영속 컨텍스트에 관리되어지는 객체 (엔티티)안에 조회 했을 때 기준으로 1차 캐쉬에 저장되어 짐
         //추후 1차 캐쉬에 들어가있는 객체의(엔티티의) 변수값이 변경되었다면 자동으로 감지한다.

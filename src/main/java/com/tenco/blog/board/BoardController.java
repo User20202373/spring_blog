@@ -19,9 +19,8 @@ import java.util.List;
 @Controller // IoC
 @RequiredArgsConstructor // DI(디팬던시 인젝션)
 public class BoardController {
-    // DI
-    private final BoardNativeRepository boardNativeRepository;
-    private final BoardPersistRepository boardPersistRepository;
+
+    private final BoardService boardService;
 
     /**
      * H2 DB 주소
@@ -36,7 +35,6 @@ public class BoardController {
     @GetMapping("/board/save-form")
     public String saveForm(HttpSession httpSession) {
         // 1. 인증검사는 LoginInterceptor에서 먼저 처리함
-
         return "board/save-form";
     }
 
@@ -48,48 +46,15 @@ public class BoardController {
      */
     // 자원의 생성
     @PostMapping("/board/save")
-    //사용자 요청 ->HTTP 요청 메시지(Post)
     public String saveProc(BoardRequest.SaveDTO saveDTO, HttpSession session) {
 
-//        Board board = saveDTO.toEntity();
-//        boardPersistRepository.save(board);
-        log.info("=== 게시글 저장 요청 ===");
-        //이 요청시 사용자가 로그인을 했다면 로그인 정보를 세션 메모리에서 가져오면 된다
-        // 1. 세션에서 로그인한 사용자 정보 가져오기
         User sessionUser = (User) session.getAttribute("sessionUser");
 
-
-        // 인증검사는 LoginInterceptor에서 먼저 처리함
-
-
-        //.3로그인 된 사용자
-
-
-        try {
-            // 3. 로그인 된 사용자
-            // 3.1 유효성 검사
-            saveDTO.validate();
-            Board board = saveDTO.toEntity(sessionUser);
-            boardPersistRepository.save(board);
-            return "redirect:/";
-        } catch (Exception e) {
-            System.out.println("에러 발생 : " + e.getMessage());
-            return "board/save-form";
-        }
-
-
-        //insert + 트랜잭션 처리
-        //boardNativeRepository.save(title, content, username);
-//        Board board = new Board();
-//        board.setUsername(username);
-//        board.setTitle(title);
-//        board.setContent(content);
-        // boardPersistRepository.save(board);
-
-        //redirect <-- 다시 URL 요청 해!
-        //return "redirect:/";
-
+        saveDTO.validate();
+        boardService.save(saveDTO, sessionUser);
+        return "redirect:/";
     }
+
 
     /**
      * 게시글 목록 화면 요청
@@ -100,23 +65,18 @@ public class BoardController {
     @GetMapping({"/", "index"})
     public String list(Model model) {
 
-        List<Board> boardList = boardPersistRepository.findAll();
+        List<Board> boardList = boardService.findAll();
         model.addAttribute("boardList", boardList);
         return "board/list";
     }
 
     //게시글 상세보기 화면 요청
-    // http://localhost:8080/board/1
+// http://localhost:8080/board/1
     @GetMapping("/board/{id}")
     public String detailPage(@PathVariable(name = "id") Integer id, Model model) {
         //유효성 검사. 인증 검사
 
-        Board board = boardPersistRepository.findById(id);
-        //board는 연관관계가 User 엔티티와 ManyToOne 관계 설정이 되어 있다
-        // 직접 쿼리구문을 작성하지 않을 때 즉, 엔티티 매니저의 메서드로 객체를 조회시
-        //자동으로 JOIN구문을 호출해 준다
-        // 단, Fatch 전략에 따라서 EAGER,LAZY 전략에 따라 한번에 다 조인해서 가져오거나
-        //필요할 때 한번 더 요청하는 것이 LAZY 전략이다
+        Board board = boardService.findById(id);
         System.out.println(board.getUser().getUsername());
         model.addAttribute("board", board);
         return "board/detail";
@@ -124,25 +84,10 @@ public class BoardController {
 
 
     // 삭제 기능 요청
-    // 1. 로그인 여부 확인
-    // 2. 삭제할 게시글이 본인이 작성한 게시글인지 확인 (권한 확인, 인가 처리)
-    // 3. 인가 처리 후 삭제 진행
     @PostMapping("/board/{id}/delete")
     public String deleteProc(@PathVariable(name = "id") Integer id, HttpSession session) {
-        log.info("===  게시글 삭제 요청 ===");
-        // 인증 검사
         User sessionUser = (User) session.getAttribute("sessionUser");
-        try {
-            // 삭제할 게시글 조회 (권한 체크, 인가 처리)
-            Board board = boardPersistRepository.findById(id);
-            if (board.getUser().getId() == sessionUser.getId()) {
-                boardPersistRepository.deleteById(id);
-            } else {
-                throw new Exception403("삭제 권한이 없습니다");
-            }
-        } catch (Exception e) {
-            throw new Exception403("삭제 권한이 없습니다");
-        }
+        boardService.deleteById(id, sessionUser);
         return "redirect:/";
     }
 
@@ -152,49 +97,26 @@ public class BoardController {
     @GetMapping("/board/{id}/update-form")
     public String updateFormPage(@PathVariable(name = "id") Integer id, Model model, HttpSession session) {
 
-        // 인증 처리
         User sessionUser = (User) session.getAttribute("sessionUser");
-
-        // 인가 처리
-        Board board = boardPersistRepository.findById(id);
-        if (sessionUser.getId() != board.getUser().getId()) {
-            throw new Exception403("수정 권한이 없습니다");
-        }
-
-        model.addAttribute("board", board);
+        // findById <-- 상세보기 화면 요청이라서 누구나 요청 가능 (즉 인가처리 안되고 있음)
+        Board boardEntity = boardService.findByIdAndCheckOwner(id, sessionUser);
+        model.addAttribute("board", boardEntity);
         return "board/update-form";
     }
 
     // /board/{id}/update
     @PostMapping("/board/{id}/update")
-    //메세지 컨버터란 객체가 동작해서 자동으로 객체를 생성하고 값을 매핑해준다
-    public String update(@PathVariable(name = "id") Integer id, BoardRequest.UpdateDTO updateDTO, HttpSession session) {
 
-        //1. 유효성 검사
-        //username,title, content 유효성 검사
+    public String update(@PathVariable(name = "id") Integer id, BoardRequest.UpdateDTO updateDTO, HttpSession session) {
 
         //인증검사
         User sessionUser = (User) session.getAttribute("sessionUser");
+        updateDTO.validate();
+        boardService.updateById(id, updateDTO, sessionUser);
 
-        try {
-            //유효성 검사
-            updateDTO.validate();
 
-            //인가 검사
-            Board board = boardPersistRepository.findById(id);
-            if (sessionUser.getId() != board.getUser().getId()) {
-                throw new RuntimeException("수정할 권한이 없습니다");
-            }
-            boardPersistRepository.updateById(id, updateDTO);
-        } catch (Exception e) {
-            // /board/{id}/update
-            return "redirect:/board/" + id + "/update-form";
-        }
-
-        //게시글 수정 요청 완료 ---> 게시글 목록, 게시글 상세보기 화면
-        // 리다이렉트는 뷰 리졸브 동작이 아닌(내부 파일 찾는 것이 아니고)
-        // 그냥 새로운 HTTP Get 요청이다
         return "redirect:/board/" + id;
     }
 
 }
+

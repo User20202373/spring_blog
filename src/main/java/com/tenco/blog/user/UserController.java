@@ -1,54 +1,48 @@
 package com.tenco.blog.user;
 
 import jakarta.servlet.http.HttpSession;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @Controller //IoC
 @RequiredArgsConstructor // DI 처리
 public class UserController {
-    private final HttpSession httpSession;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     //프로필 수정 화면 요청
     // /user/update-form
     @PostMapping("/user/update")
-    public String updateProc(UserRequest.UpdateDTO updateDTO,HttpSession session){
+    public String updateProc(UserRequest.UpdateDTO updateDTO, HttpSession session) {
+        // 인증 검사 처리 LoginInterceptor에서 처리
+        //유효성 검사
+        updateDTO.validate();
+        // 데이터베이스 업데이트처리
         User sessionUser = (User) session.getAttribute("sessionUser");
+        User userEntity = userService.updateById(sessionUser.getId(), updateDTO);
 
-        try {
-            updateDTO.validate();
-            //더티체킹 전략
-          User userEntity=  userRepository.updateById(sessionUser.getId(),updateDTO);
+        //세션 동기화 처리
+        session.setAttribute("sessionUser", userEntity);
 
-          //세션 동기화 처리 (중요!)
-            session.setAttribute("sessionUser",userEntity);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
         return "redirect:/";
     }
 
 
+    //프로필 화면 요청
     @GetMapping("/user/update-form")
     public String updateFormPage(HttpSession session, Model model) {
         //인증검사
         User sessionUser = (User) session.getAttribute("sessionUser");
+        User userEntity = userService.findById(sessionUser.getId());
 
-
-        User userEntity = userRepository.findById(sessionUser.getId());
-        userEntity.setPassword("");
-
-        //가방에 데이터 담아서 화면에 값 내려주기
+        //가방에 넣어서 내려주기
         model.addAttribute("user", userEntity);
+
         return "user/update-form";
     }
 
@@ -57,37 +51,28 @@ public class UserController {
     //http://localhost:8080/login-form
     @GetMapping("/login-form")
     public String loginFormPage() {
+        //인증검사 x
+        // 넘겨 받는 값 없으니 유효성 검사x
         return "user/login-form";
     }
 
     //로그인 기능 요청
     @PostMapping("/login")
-    public String loginProc(UserRequest.LoginDTO loginDTO, HttpSession httpSession) {
-        //1.유효성 검사
+    public String loginProc(UserRequest.LoginDTO loginDTO, HttpSession session) {
+        //인증검사 x ,유효성 검사 o
         loginDTO.validate();
 
-        User sessionUser = userRepository.findByUsernameAndPassword(loginDTO.getUsername(), loginDTO.getPassword());
-        if (sessionUser == null) {
-            //로그인 실패(username, password)불일치
-            throw new IllegalArgumentException("사용자명 또는 비밀번호가 잘못 되었습니다");
-        }
-        // 여기까지 코드가 내려온다면 우리 DB에 정상 사용자임을 논리적으로 확인 됨
-        httpSession.setAttribute("sessionUser", sessionUser);
-        System.out.println("로그인 성공");
-        System.out.println("로그인 사용자 : " + sessionUser.getUsername());
-        System.out.println("로그인 이메일 : " + sessionUser.getEmail());
-
+        User userEntity = userService.login(loginDTO);
+        session.setAttribute("sessionUser",userEntity);
         return "redirect:/";
 
     }
 
     //로그아웃 기능 요청
     @GetMapping("/logout")
-    public String logout() {
+    public String logout(HttpSession session) {
         //세션 메모리에 내 정보를 없애 버림
-        // 로그 아웃
-        httpSession.invalidate();
-
+        session.invalidate();
         return "redirect:/";
     }
 
@@ -99,18 +84,13 @@ public class UserController {
         return "user/join-form";
     }
 
+    // 회원가입 기능 요청
     @PostMapping("/join")
     public String joinProc(UserRequest.JoinDTO joinDTO) {
-
-        //유효성 검사하기
+        // 인증검사 x (회원가입 할 때 로그인 안되어있음)
+        //유효성 검사하기 o
         joinDTO.validate(); // 유효성 검사 --> 오류 --> 예외 처리넘어감
-        //회원가입 요청 전 ==> 중복 username 검사
-        User userCheckName = userRepository.findByUsername(joinDTO.getUsername());
-        if (userCheckName != null) {
-            throw new IllegalArgumentException("이미 사용중인 username 입니다" + userCheckName.getUsername());
-        }
-        userRepository.save(joinDTO.toEntity());
-
+        userService.join(joinDTO);
         return "redirect:/login-form";
     }
 }

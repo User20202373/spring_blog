@@ -50,13 +50,7 @@ public class BoardRequest {
                 throw new IllegalArgumentException("내용은 3글자 이상 작성해야합니다");
             }
         }
-//        public Board toEntity() {
-//            return Board.builder()
-//                    .username(username)
-//                    .title(title)
-//                    .content(content)
-//                    .build();
-//        }
+
 
 
     }

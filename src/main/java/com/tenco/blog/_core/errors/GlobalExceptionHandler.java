@@ -5,15 +5,15 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.logging.Logger;
 
 @Slf4j
 //모든 컨트롤러에서 발생하는 예외를 이 클래스에서 처리 하겠다
 // RuntimeException 이 발생되면 해당 이 파일로 예외 처리가 됨
-@ControllerAdvice // IoC
+@ControllerAdvice // IoC -> 에러 페이지 찾아가는 녀석
+// @RestControllerAdvice // 에러를 데이터로 반환할 때 사용
 public class GlobalExceptionHandler {
 
     //private static final Logger log = LoggerFactory.getLogger((GlobalExceptionHandler.class)); <- Slf4j
@@ -29,24 +29,56 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(Exception401.class)
-    public String ex401(Exception401 e , HttpServletRequest request){
-        log.warn("=== 401 Unauthorized 에러 발생 ===");
-        log.warn("요청 URL: {}",request.getRequestURL());
-        log.warn("에러 메세지: {}",e.getMessage());
+//    @ExceptionHandler(Exception401.class)
+//    public String ex401(Exception401 e , HttpServletRequest request){
+//        log.warn("=== 401 Unauthorized 에러 발생 ===");
+//        log.warn("요청 URL: {}",request.getRequestURL());
+//        log.warn("에러 메세지: {}",e.getMessage());
+//
+//        request.setAttribute("msg",e.getMessage());
+//        return "err/401";
+//    }
+@ExceptionHandler(Exception401.class)
+@ResponseBody
+public String ex401(Exception401 e , HttpServletRequest request){// 1. 로그 기록 (유지)
+    log.warn("=== 401 Unauthorized 에러 발생 ===");
+    log.warn("요청 URL: {}", request.getRequestURL());
+    log.warn("에러 메세지: {}", e.getMessage());
 
-        request.setAttribute("msg",e.getMessage());
-        return "err/401";
-    }
-    @ExceptionHandler(Exception403.class)
-    public String ex403(Exception403 e , HttpServletRequest request){
-        log.warn("=== 403 Forbidden 에러 발생 ===");
-        log.warn("요청 URL: {}",request.getRequestURL());
-        log.warn("에러 메세지: {}",e.getMessage());
+    // 2. 스크립트 작성 (Text Block 활용)
+    String script = """
+            <script>
+                alert('%s');
+                location.href = '/login-form';
+            </script>
+            """.formatted(e.getMessage());
 
-        request.setAttribute("msg",e.getMessage());
-        return "err/403";
-    }
+    return script;
+}
+//    @ExceptionHandler(Exception403.class)
+//    public String ex403(Exception403 e , HttpServletRequest request){
+//        log.warn("=== 403 Forbidden 에러 발생 ===");
+//        log.warn("요청 URL: {}",request.getRequestURL());
+//        log.warn("에러 메세지: {}",e.getMessage());
+//
+//        request.setAttribute("msg",e.getMessage());
+//        return "err/403";
+//    }
+
+@ExceptionHandler(Exception403.class)
+@ResponseBody // 파일 찾지 말고 데이터 반환
+public String ex403(Exception403 e , HttpServletRequest request){
+//    String script = "<script>alert(' "+ e.getMessage() +" ');" +
+//            "history.back();" +
+//            "</script>";
+    String script = """
+            <script>
+                alert('%s');
+                history.back();
+            </script>
+            """.formatted(e.getMessage());
+    return script;
+}
     @ExceptionHandler(Exception404.class)
     public String ex404(Exception404 e , HttpServletRequest request){
         log.warn("=== 404 Not Found 에러 발생 ===");

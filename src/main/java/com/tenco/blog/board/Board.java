@@ -18,7 +18,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "board_tb")
 @NoArgsConstructor
-@AllArgsConstructor // 전체 멤벼 번수를 넣을 수 있는 생성자.
+@AllArgsConstructor // 전체 멤버 번수를 넣을 수 있는 생성자.
 @Builder
 public class Board {
 

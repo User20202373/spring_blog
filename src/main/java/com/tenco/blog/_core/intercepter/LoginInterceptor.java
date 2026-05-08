@@ -2,6 +2,7 @@ package com.tenco.blog._core.intercepter;
 
 import com.tenco.blog._core.errors.Exception401;
 import com.tenco.blog.user.User;
+import com.tenco.blog.user.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -19,8 +20,9 @@ public class LoginInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
         HttpSession session = request.getSession();
-        User sessionuser = (User) session.getAttribute("sessionUser");
-        if (sessionuser == null) {
+        UserResponse.SessionDTO sessionUser = (UserResponse.SessionDTO) session.getAttribute("sessionUser");
+        if (sessionUser == null) {
+
             throw new Exception401("로그인 먼저 해주세요");
         }
 
@@ -29,7 +31,6 @@ public class LoginInterceptor implements HandlerInterceptor {
 
 
     //  뷰가 렌더링 되기 전에 낚아 채는 녀석
-
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);

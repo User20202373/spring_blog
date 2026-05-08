@@ -22,13 +22,8 @@ public class UserController {
         //유효성 검사
         updateDTO.validate();
         // 데이터베이스 업데이트처리
-        User sessionUser = (User) session.getAttribute("sessionUser");
-        User userEntity = userService.updateById(sessionUser.getId(), updateDTO);
-
-        //세션 동기화 처리
-        session.setAttribute("sessionUser", userEntity);
-
-
+        UserResponse.SessionDTO sessionUser = (UserResponse.SessionDTO) session.getAttribute("sessionUser");
+        userService.회원정보수정(sessionUser.getId(), updateDTO, session);
         return "redirect:/";
     }
 
@@ -37,11 +32,11 @@ public class UserController {
     @GetMapping("/user/update-form")
     public String updateFormPage(HttpSession session, Model model) {
         //인증검사
-        User sessionUser = (User) session.getAttribute("sessionUser");
-        User userEntity = userService.findById(sessionUser.getId());
+        UserResponse.SessionDTO sessionUser = (UserResponse.SessionDTO) session.getAttribute("sessionUser");
+        UserResponse.SessionDTO sessionDTO = userService.회원정보수정화면(sessionUser.getId());
 
         //가방에 넣어서 내려주기
-        model.addAttribute("user", userEntity);
+        model.addAttribute("user", sessionDTO);
 
         return "user/update-form";
     }
@@ -58,12 +53,12 @@ public class UserController {
 
     //로그인 기능 요청
     @PostMapping("/login")
-    public String loginProc(UserRequest.LoginDTO loginDTO, HttpSession session) {
+    public String loginProc(UserRequest.LoginDTO reqLoginDTO, HttpSession session) {
         //인증검사 x ,유효성 검사 o
-        loginDTO.validate();
+        reqLoginDTO.validate();
 
-        User userEntity = userService.login(loginDTO);
-        session.setAttribute("sessionUser",userEntity);
+        UserResponse.SessionDTO sessionDTO = userService.로그인(reqLoginDTO);
+        session.setAttribute("sessionUser", sessionDTO);
         return "redirect:/";
 
     }
@@ -90,7 +85,7 @@ public class UserController {
         // 인증검사 x (회원가입 할 때 로그인 안되어있음)
         //유효성 검사하기 o
         joinDTO.validate(); // 유효성 검사 --> 오류 --> 예외 처리넘어감
-        userService.join(joinDTO);
+        userService.회원가입(joinDTO);
         return "redirect:/login-form";
     }
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * 게시글 응답 DTO
- *
+ * <p>
  * Open Session In View 가 false일 때
  * 트랜잭션이 종료되는 시점에 LAZY로딩이 불가능하다
  * Service 단에서 필요한 데이터를 모두 조회 또는 일부로 호출(트리거)해서 응답 DTO 변환해서 반환
@@ -42,6 +42,7 @@ public class BoardResponse {
         private String content;
         private String username;
         private Integer userId; // user PK
+        private boolean isOwner;
 
         public DetailDTO(Board board) {
             this.id = board.getId();
@@ -52,7 +53,18 @@ public class BoardResponse {
                 this.userId = board.getUser().getId();
             }
         }
-    }
 
+        // 소유자 확인
+        public boolean checkIsOwner(Integer sessionUserId) {
+            if (sessionUserId == null) {
+                return false;
+            }
+            if (sessionUserId.equals(this.userId)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
 } // end of outer class
 

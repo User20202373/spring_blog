@@ -1,11 +1,9 @@
 package com.tenco.blog._core.comfig;
 
-import com.tenco.blog._core.intercepter.LoginInterceptor;
+
 import com.tenco.blog._core.intercepter.SessionInterceptor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -16,7 +14,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Autowired // DI 처리
-    private LoginInterceptor loginInterceptor;
+    private com.tenco.blog._core.interceptor.LoginInterceptor loginInterceptor;
     @Autowired // DI 처리
     private SessionInterceptor sessionInterceptor;
 
@@ -31,7 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         //여기에 LoginInterceptor 등록할 예정
         //인증 처리 인터셉터 동작함
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/board/**", "/user/**")
+                .addPathPatterns("/board/**", "/user/**", "/reply/**")
                 .excludePathPatterns(
                         //로그인 관련(인증이 필요없는 페이지)
                         "/login-form",    // 로그인 화면 요청 시

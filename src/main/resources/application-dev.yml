@@ -15,7 +15,7 @@ spring:
     servlet:
       # 머스태치 템플릿 엔진에서 request 객체와 세션 객체에 접근할 수 있도록 허용하는 설정 추가
       expose-session-attributes: false
-      expose-request-attributes: false
+      expose-request-attributes: true
 
 
   #데이터베이스 연결 설정(MySQL)
